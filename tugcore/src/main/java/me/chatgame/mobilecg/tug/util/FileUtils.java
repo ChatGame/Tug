@@ -75,4 +75,27 @@ public class FileUtils {
         File file = new File(filePath);
         return file.exists();
     }
+
+    public static void deleteFile(File file) {
+        if (file == null || !file.exists()) {
+            return;
+        }
+        if (file.isFile()) {
+            File tmpFile = new File(file.getAbsolutePath() + "_delete");
+            file.renameTo(tmpFile);
+            tmpFile.delete();
+        } else {
+            file.delete();
+        }
+    }
+
+    public static boolean renameFile(File src, File dst) {
+        deleteFile(dst);
+        return src.renameTo(dst);
+    }
+
+    public static boolean renameFile(File src, String dstPath) {
+        File dst = new File(dstPath);
+        return renameFile(src, dst);
+    }
 }

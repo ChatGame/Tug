@@ -22,8 +22,8 @@ public class TugTask {
 
     private String url;
     private String localPath;
-    private int fileTotalSize;
-    private int downloadedLength;
+    private long fileTotalSize;
+    private long downloadedLength;
     private int fileType;
     private int status = Status.WAITING;
 
@@ -43,19 +43,19 @@ public class TugTask {
         this.localPath = localPath;
     }
 
-    public int getFileTotalSize() {
+    public long getFileTotalSize() {
         return fileTotalSize;
     }
 
-    public void setFileTotalSize(int fileTotalSize) {
+    public void setFileTotalSize(long fileTotalSize) {
         this.fileTotalSize = fileTotalSize;
     }
 
-    public int getDownloadedLength() {
+    public long getDownloadedLength() {
         return downloadedLength;
     }
 
-    public void setDownloadedLength(int downloadedLength) {
+    public void setDownloadedLength(long downloadedLength) {
         this.downloadedLength = downloadedLength;
     }
 

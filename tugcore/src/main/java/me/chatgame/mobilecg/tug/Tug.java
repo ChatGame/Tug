@@ -101,6 +101,7 @@ public class Tug {
                 }
             } else {
                 TugTask task = new TugTask();
+                task.setFileType(fileType);
                 task.setStatus(TugTask.Status.WAITING);
                 task.setUrl(url);
                 task.setLocalPath(localPath);

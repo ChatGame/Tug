@@ -8,6 +8,8 @@ import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import me.chatgame.mobilecg.tug.util.FileUtils;
+
 /**
  * Created by star on 16/4/5.
  */
@@ -35,7 +37,7 @@ public class TugWorker implements Runnable {
             try {
                 TugTask task = tug.taskQueue.take();
                 setCurrentTask(task);
-
+                // TODO: 16/4/6 download start
                 download(task);
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -62,28 +64,64 @@ public class TugWorker implements Runnable {
         }
 
         task.setStatus(TugTask.Status.DOWNLOADING);
-
-        URL url = new URL(task.getUrl());
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setConnectTimeout(TIMEOUT);
-        connection.setReadTimeout(TIMEOUT);
-
-        connection.setRequestProperty("Range", "bytes=" + downloadedSize + "-");
-
-        InputStream is = null;
-        RandomAccessFile fileOutput = null;
+        HttpURLConnection connection = null;
         try {
-            is = new BufferedInputStream(connection.getInputStream());
-            fileOutput = new RandomAccessFile(tmpFile, "rwd");
-        } finally {
-            connection.disconnect();
-            if (is != null) {
-                is.close();
-                is = null;
+            URL url = new URL(task.getUrl());
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setConnectTimeout(TIMEOUT);
+            connection.setReadTimeout(TIMEOUT);
+
+            connection.setRequestProperty("Range", "bytes=" + downloadedSize + "-");
+            connection.setRequestProperty("Accept-Encoding", "identity");
+            connection.connect();
+
+            long totalSize = connection.getContentLength();
+            if (task.getFileTotalSize() > 0 && task.getFileTotalSize() != totalSize) {
+                // file updated, need download from start
+                task.setFileTotalSize(0);
+                task.setDownloadedLength(0);
+                FileUtils.deleteFile(tmpFile);
+                download(task);
+                return;
+            } else {
+                task.setFileTotalSize(totalSize);
             }
-            if (fileOutput != null) {
-                fileOutput.close();
-                fileOutput = null;
+
+            InputStream is = null;
+            RandomAccessFile fileOutput = null;
+            try {
+                is = new BufferedInputStream(connection.getInputStream());
+                fileOutput = new RandomAccessFile(tmpFile, "rwd");
+                fileOutput.seek(downloadedSize);
+
+                byte[] buffer = new byte[2 * 1024];
+                int readLength;
+                while ((readLength = is.read(buffer)) > 0) {
+                    fileOutput.write(buffer, 0, readLength);
+                    downloadedSize += readLength;
+                    // TODO: 16/4/6 progress update
+                }
+                task.setDownloadedLength(downloadedSize);
+                if (task.getDownloadedLength() == task.getFileTotalSize()) {
+                    task.setStatus(TugTask.Status.DOWNLOADED);
+                    boolean ret = FileUtils.renameFile(tmpFile, task.getLocalPath());
+                    if (ret) {
+                        // TODO: 16/4/6 download success
+                    }
+                }
+            } finally {
+                if (is != null) {
+                    is.close();
+                    is = null;
+                }
+                if (fileOutput != null) {
+                    fileOutput.close();
+                    fileOutput = null;
+                }
+            }
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
             }
         }
     }
