@@ -15,7 +15,7 @@ public interface DownloadListener {
      * @param url downloading url
      * @param progress [0 ~ 100]
      */
-    void onDownloadPrgress(String url, int progress);
+    void onDownloadProgress(String url, int progress);
 
     /**
      * Called on download success

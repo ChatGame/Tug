@@ -9,6 +9,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 import me.chatgame.mobilecg.tug.util.FileUtils;
+import me.chatgame.mobilecg.tug.util.LogUtil;
 
 /**
  * Created by star on 16/4/5.
@@ -18,6 +19,7 @@ public class TugWorker implements Runnable {
 
     private Tug tug;
     private TugTask currentTask;
+    private boolean taskCancelled = false;
 
     public TugWorker(Tug tug) {
         this.tug = tug;
@@ -31,24 +33,42 @@ public class TugWorker implements Runnable {
         this.currentTask = currentTask;
     }
 
+    private synchronized void setTaskCancelled(boolean taskCancelled) {
+        this.taskCancelled = taskCancelled;
+    }
+
+    private synchronized boolean isTaskCancelled() {
+        return taskCancelled;
+    }
+
     @Override
     public void run() {
         while (true) {
             try {
-                TugTask task = tug.taskQueue.take();
+                TugTask task = tug.waitingQueue.take();
                 setCurrentTask(task);
-                // TODO: 16/4/6 download start
+                tug.downloadStart(task);
                 download(task);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
-                // TODO: 16/4/5 download fail
+                TugTask task = getCurrentTask();
+                if (task != null) {
+                    if (task.getRetryCount() > 0) {
+                        task.decreaseRetryCount();
+                        tug.addRetryTask(task);
+                    } else {
+                        tug.downloadFail(task);
+                    }
+                    setCurrentTask(null);
+                }
             }
         }
     }
 
     private void download(TugTask task) throws IOException {
+        setTaskCancelled(false);
         String tmpFilePath = task.getLocalPath() + ".tmp";
         File tmpFile = new File(tmpFilePath);
         long downloadedSize = 0;
@@ -96,20 +116,31 @@ public class TugWorker implements Runnable {
 
                 byte[] buffer = new byte[2 * 1024];
                 int readLength;
-                while ((readLength = is.read(buffer)) > 0) {
+                while (!isTaskCancelled() && (readLength = is.read(buffer)) > 0) {
                     fileOutput.write(buffer, 0, readLength);
                     downloadedSize += readLength;
-                    // TODO: 16/4/6 progress update
+                    int progress = (int) (downloadedSize / totalSize);
+                    progress = Math.max(0, progress);
+                    progress = Math.min(100, progress);
+                    tug.onDownloadProgress(task, progress);
                 }
                 task.setDownloadedLength(downloadedSize);
+                if (isTaskCancelled()) {
+                    setCurrentTask(null);
+                    return;
+                }
                 if (task.getDownloadedLength() == task.getFileTotalSize()) {
-                    task.setStatus(TugTask.Status.DOWNLOADED);
                     boolean ret = FileUtils.renameFile(tmpFile, task.getLocalPath());
                     if (ret) {
-                        // TODO: 16/4/6 download success
+                        tug.downloadSuccess(task, task.getLocalPath());
+                    } else {
+                        LogUtil.logW("rename file failed after download - set task as failed");
+                        tug.downloadFail(task);
                     }
+                    setCurrentTask(null);
                 }
             } finally {
+                LogUtil.logD("close input stream and file output");
                 if (is != null) {
                     is.close();
                     is = null;
@@ -120,9 +151,14 @@ public class TugWorker implements Runnable {
                 }
             }
         } finally {
+            LogUtil.logD("close http connection");
             if (connection != null) {
                 connection.disconnect();
             }
         }
+    }
+
+    public void cancelCurrentTask() {
+        setTaskCancelled(true);
     }
 }
