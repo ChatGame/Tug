@@ -2,6 +2,7 @@ package me.chatgame.mobilecg.tug;
 
 import android.text.TextUtils;
 
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -10,10 +11,11 @@ import java.util.concurrent.atomic.AtomicLong;
 public class TugTask implements Comparable<TugTask> {
 
     public interface Status {
-        int WAITING = 0;
-        int DOWNLOADING = 1;
-        int DOWNLOADED = 2;
-        int FAILED = 3;
+        int IDLE = 0;
+        int WAITING = 1;
+        int DOWNLOADING = 2;
+        int DOWNLOADED = 3;
+        int FAILED = 4;
     }
 
     public interface FileType {
@@ -42,6 +44,7 @@ public class TugTask implements Comparable<TugTask> {
     private int priority;
 
     private int retryCount = 1;
+    private int progress;
 
     public TugTask() {
         seqNum = seq.getAndIncrement();
@@ -123,6 +126,34 @@ public class TugTask implements Comparable<TugTask> {
     public synchronized void decreaseRetryCount() {
         retryCount--;
         retryCount = Math.max(retryCount, 0);
+    }
+
+    public void setProgress(int progress) {
+        this.progress = progress;
+    }
+
+    public int getProgress() {
+        return progress;
+    }
+
+    public long getSeqNum() {
+        return seqNum;
+    }
+
+    public String getStatusText() {
+        switch (status) {
+            case Status.IDLE:
+                return "Idle";
+            case Status.WAITING:
+                return "Waiting";
+            case Status.DOWNLOADING:
+                return "Downloading";
+            case Status.DOWNLOADED:
+                return "Downloaded";
+            case Status.FAILED:
+                return "Failed";
+        }
+        return "";
     }
 
     @Override

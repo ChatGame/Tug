@@ -29,8 +29,9 @@ public class Tug {
     private String rootPath;
     private Map<String, Set<DownloadListener>> listenerMap = new HashMap<>();
     private List<TugWorker> workers = new ArrayList<>();
-    BlockingQueue<TugTask> waitingQueue = new PriorityBlockingQueue<>();
-    Queue<TugTask> workingQueue = new ConcurrentLinkedQueue<>();
+    private BlockingQueue<TugTask> waitingQueue = new PriorityBlockingQueue<>();
+    private Queue<TugTask> workingQueue = new ConcurrentLinkedQueue<>();
+    private Queue<TugTask> idleQueue = new ConcurrentLinkedQueue<>();
 
     private Tug() {
 
@@ -45,6 +46,40 @@ public class Tug {
 
     public synchronized static void setInstance(Tug tug) {
         instance = tug;
+    }
+
+    TugTask takeFromWaitingQueue() throws InterruptedException {
+        return waitingQueue.take();
+    }
+
+    private void moveTaskToIdleQueue(TugTask task) {
+        workingQueue.remove(task);
+        waitingQueue.remove(task);
+        task.setStatus(TugTask.Status.IDLE);
+        idleQueue.offer(task);
+        // TODO: 16/4/7 update in db
+    }
+
+    void moveTaskFromIdleToWaitingQueue(TugTask task) {
+        idleQueue.remove(task);
+        task.setStatus(TugTask.Status.WAITING);
+        waitingQueue.offer(task);
+        // TODO: 16/4/7 update in db
+    }
+
+    void addRetryTask(TugTask task) {
+        workingQueue.remove(task);
+        task.setStatus(TugTask.Status.WAITING);
+        waitingQueue.offer(task);
+        // TODO: 16/4/6 update in db
+    }
+
+    public List<TugTask> getAllTasks() {
+        List<TugTask> allTasks = new ArrayList<>();
+        allTasks.addAll(waitingQueue);
+        allTasks.addAll(workingQueue);
+        allTasks.addAll(idleQueue);
+        return allTasks;
     }
 
     private synchronized void addListener(String url, DownloadListener listener) {
@@ -87,30 +122,55 @@ public class Tug {
         return null;
     }
 
-    void addRetryTask(TugTask task) {
-        workingQueue.remove(task);
-        task.setStatus(TugTask.Status.WAITING);
-        waitingQueue.offer(task);
-        // TODO: 16/4/6 update in db
+    private TugTask findTaskInAllQueues(TugTask dstTask) {
+        TugTask foundTask = findTaskFromQueue(waitingQueue, dstTask);
+        if (foundTask == null) {
+            foundTask = findTaskFromQueue(workingQueue, dstTask);
+        }
+        if (foundTask == null) {
+            foundTask = findTaskFromQueue(idleQueue, dstTask);
+        }
+        return foundTask;
     }
 
-    public void addTask(TugTask task, DownloadListener listener) {
-        if (!waitingQueue.contains(task) && !workingQueue.contains(task)) {
+    private boolean containsInAllQueues(TugTask task) {
+        if (waitingQueue.contains(task) || workingQueue.contains(task) || idleQueue.contains(task)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Add download task
+     * @param task
+     * @param listener
+     * @return a tug task that is added, if task exists, the existed task will be returned
+     */
+    TugTask addTask(TugTask task, DownloadListener listener) {
+        if (!containsInAllQueues(task)) {
             task.setStatus(TugTask.Status.WAITING);
             waitingQueue.offer(task);
             // TODO: 16/4/6 update in db
         } else {
-            TugTask foundTask = findTaskFromQueue(waitingQueue, task);
-            if (foundTask == null) {
-                foundTask = findTaskFromQueue(workingQueue, task);
-            }
+            TugTask foundTask = findTaskFromQueue(idleQueue, task);
             if (foundTask != null) {
-                foundTask.increaseRetryCount();
+                // move to waiting queue
+                moveTaskFromIdleToWaitingQueue(foundTask);
+            } else {
+                foundTask = findTaskFromQueue(waitingQueue, task);
+                if (foundTask == null) {
+                    foundTask = findTaskFromQueue(workingQueue, task);
+                }
+                if (foundTask != null) {
+                    foundTask.increaseRetryCount();
+                    task = foundTask;
+                }
             }
         }
         if (task != null) {
             addListener(task.getUrl(), listener);
         }
+        return task;
     }
 
     /**
@@ -119,30 +179,54 @@ public class Tug {
      * @param fileType see {@link TugTask.FileType}
      * @param destLocalPath local path to save the downloaded file
      * @param listener callback listener
+     * @return a tug task that is added, if task exists, the existed task will be returned
      */
-    public void addTask(String url, int fileType, String destLocalPath, DownloadListener listener) {
+    public TugTask addTask(String url, int fileType, String destLocalPath, DownloadListener listener) {
         if (TextUtils.isEmpty(url)) {
-            return;
+            return null;
         }
         if (url.startsWith("http")) {
             String localPath = destLocalPath;
             if (TextUtils.isEmpty(destLocalPath)) {
                 localPath = FileUtils.getLocalFilePath(url, fileType, rootPath);
             }
+            TugTask task = new TugTask();
+            task.setFileType(fileType);
+            task.setStatus(TugTask.Status.WAITING);
+            task.setUrl(url);
+            task.setLocalPath(localPath);
             if (FileUtils.isFileExist(localPath)) {
                 if (listener != null) {
-                    listener.onDownloadProgress(url, 100);
-                    listener.downloadSuccess(url, localPath);
+                    task.setProgress(100);
+                    task.setStatus(TugTask.Status.DOWNLOADED);
+                    listener.onDownloadProgress(task);
+                    listener.onDownloadSuccess(task);
                 }
+                return task;
             } else {
-                TugTask task = new TugTask();
-                task.setFileType(fileType);
-                task.setStatus(TugTask.Status.WAITING);
-                task.setUrl(url);
-                task.setLocalPath(localPath);
-                addTask(task, listener);
+                return addTask(task, listener);
             }
         }
+        return null;
+    }
+
+    /**
+     * Add download task
+     * @param url
+     * @param fileType
+     * @param destLocalFolder
+     * @param savedFileName
+     * @param listener
+     * @return
+     */
+    public TugTask addTask(String url, int fileType, String destLocalFolder, String savedFileName, DownloadListener listener) {
+        String localPath = null;
+        if (!TextUtils.isEmpty(destLocalFolder) && !TextUtils.isEmpty(savedFileName)) {
+            localPath = destLocalFolder + savedFileName;
+        } else if (!TextUtils.isEmpty(savedFileName)) {
+            localPath = FileUtils.getLocalFilePathBySpecifiedName(savedFileName, fileType, rootPath);
+        }
+        return addTask(url, fileType, localPath, listener);
     }
 
     /**
@@ -150,10 +234,65 @@ public class Tug {
      * @param url
      */
     public void deleteTask(String url) {
-        downloadDeleted(url);
-        removeListeners(url);
         cancelWorkingTask(url);
-        removeTaskFromQueue(url);
+        TugTask task = removeTaskFromQueue(url);
+        // TODO: 16/4/7 remove task from db
+
+        if (task == null) {
+            task = new TugTask();
+            task.setUrl(url);
+        }
+        downloadDeleted(task);
+    }
+
+    /**
+     * Pause task
+     * @param url
+     */
+    public void pauseTask(String url) {
+        cancelWorkingTask(url);
+        TugTask task = new TugTask();
+        task.setUrl(url);
+        TugTask foundTask = findTaskFromQueue(idleQueue, task);
+        if (foundTask == null) {
+            foundTask = findTaskFromQueue(waitingQueue, task);
+            if (foundTask == null) {
+                foundTask = findTaskFromQueue(workingQueue, task);
+            }
+            if (foundTask != null) {
+                moveTaskToIdleQueue(foundTask);
+            }
+        }
+
+        if (foundTask != null) {
+            task = foundTask;
+        }
+        downloadPaused(task);
+    }
+
+    /**
+     * Resume task, if task doesn't exist a new task will be added
+     * @param url
+     */
+    public void resumeTask(String url) {
+        TugTask task = new TugTask();
+        task.setUrl(url);
+        TugTask foundTask = findTaskFromQueue(idleQueue, task);
+        if (foundTask != null) {
+            moveTaskFromIdleToWaitingQueue(foundTask);
+            task = foundTask;
+        } else {
+            foundTask = findTaskFromQueue(waitingQueue, task);
+            if (foundTask == null) {
+                foundTask = findTaskFromQueue(workingQueue, task);
+            }
+            if (foundTask == null) {
+                task = addTask(url, TugTask.FileType.FILE, null, null);
+            } else {
+                task = foundTask;
+            }
+        }
+        downloadResumed(task);
     }
 
     private void cancelWorkingTask(String url) {
@@ -166,11 +305,16 @@ public class Tug {
         }
     }
 
-    private void removeTaskFromQueue(String url) {
+    private TugTask removeTaskFromQueue(String url) {
         TugTask task = new TugTask();
         task.setUrl(url);
-        waitingQueue.remove(task);
-        workingQueue.remove(task);
+        TugTask foundTask = findTaskInAllQueues(task);
+        if (foundTask != null) {
+            waitingQueue.remove(foundTask);
+            workingQueue.remove(foundTask);
+            idleQueue.remove(foundTask);
+        }
+        return foundTask;
     }
 
     public void start() {
@@ -189,28 +333,29 @@ public class Tug {
         Set<DownloadListener> listeners = listenerMap.get(task.getUrl());
         if (listeners != null) {
             for (DownloadListener listener : listeners) {
-                listener.downloadStart(task.getUrl());
+                listener.onDownloadStart(task);
             }
         }
     }
 
     synchronized void onDownloadProgress(TugTask task, int progress) {
+        task.setProgress(progress);
         Set<DownloadListener> listeners = listenerMap.get(task.getUrl());
         if (listeners != null) {
             for (DownloadListener listener : listeners) {
-                listener.onDownloadProgress(task.getUrl(), progress);
+                listener.onDownloadProgress(task);
             }
         }
     }
 
-    synchronized void downloadSuccess(TugTask task, String localPath) {
+    synchronized void downloadSuccess(TugTask task) {
         task.setStatus(TugTask.Status.DOWNLOADED);
         workingQueue.remove(task);
         // TODO: 16/4/6 update in db
         Set<DownloadListener> listeners = listenerMap.get(task.getUrl());
         if (listeners != null) {
             for (DownloadListener listener : listeners) {
-                listener.downloadSuccess(task.getUrl(), localPath);
+                listener.onDownloadSuccess(task);
             }
         }
         removeListeners(task.getUrl());
@@ -223,22 +368,41 @@ public class Tug {
         Set<DownloadListener> listeners = listenerMap.get(task.getUrl());
         if (listeners != null) {
             for (DownloadListener listener : listeners) {
-                listener.downloadFail(task.getUrl());
+                listener.onDownloadFail(task);
             }
         }
         removeListeners(task.getUrl());
     }
 
-    synchronized void downloadDeleted(String url) {
-        Set<DownloadListener> listeners = listenerMap.get(url);
+    synchronized void downloadDeleted(TugTask task) {
+        Set<DownloadListener> listeners = listenerMap.get(task.getUrl());
         if (listeners != null) {
             for (DownloadListener listener : listeners) {
-                listener.downloadDeleted(url);
+                listener.onDownloadDeleted(task);
+            }
+        }
+        removeListeners(task.getUrl());
+    }
+
+    synchronized void downloadPaused(TugTask task) {
+        Set<DownloadListener> listeners = listenerMap.get(task.getUrl());
+        if (listeners != null) {
+            for (DownloadListener listener : listeners) {
+                listener.onDownloadPaused(task);
             }
         }
     }
 
-    public class Builder {
+    synchronized void downloadResumed(TugTask task) {
+        Set<DownloadListener> listeners = listenerMap.get(task.getUrl());
+        if (listeners != null) {
+            for (DownloadListener listener : listeners) {
+                listener.onDownloadResumed(task);
+            }
+        }
+    }
+
+    public static class Builder {
         private int threads = 2;
         private String rootPath;
         private Context context;

@@ -17,4 +17,9 @@
 
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
+    <style name="ProgressBarStyle" parent="Widget.AppCompat.ProgressBar.Horizontal">
+        <item name="android:minHeight">60dip</item>
+        <item name="android:maxHeight">60dip</item>
+        <item name="android:progressDrawable">@drawable/drawable_progress</item>
+    </style>
 </resources>

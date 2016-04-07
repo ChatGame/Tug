@@ -45,27 +45,41 @@ public class FileUtils {
     }
 
     public static String getLocalFilePath(String fileUrl, int fileType, String rootPath) {
-        CacheDir dir;
         String appendix;
         switch (fileType) {
             case TugTask.FileType.IMAGE:
-                dir = CacheDir.IMAGE;
                 appendix = ".image";
                 break;
             case TugTask.FileType.VIDEO:
-                dir = CacheDir.VIDEO;
                 appendix = ".video";
                 break;
             case TugTask.FileType.AUDIO:
-                dir = CacheDir.AUDIO;
                 appendix = ".audio";
                 break;
             default:
-                dir = CacheDir.FILE;
                 appendix = ".file";
                 break;
         }
-        return getCacheDirByType(dir, rootPath) + StringUtils.getMD5(fileUrl) + appendix;
+        return getLocalFilePathBySpecifiedName(StringUtils.getMD5(fileUrl) + appendix, fileType, rootPath);
+    }
+
+    public static String getLocalFilePathBySpecifiedName(String fileName, int fileType, String rootPath) {
+        CacheDir dir;
+        switch (fileType) {
+            case TugTask.FileType.IMAGE:
+                dir = CacheDir.IMAGE;
+                break;
+            case TugTask.FileType.VIDEO:
+                dir = CacheDir.VIDEO;
+                break;
+            case TugTask.FileType.AUDIO:
+                dir = CacheDir.AUDIO;
+                break;
+            default:
+                dir = CacheDir.FILE;
+                break;
+        }
+        return getCacheDirByType(dir, rootPath) + fileName;
     }
 
     public static boolean isFileExist(String filePath) {
