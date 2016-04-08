@@ -103,7 +103,7 @@ public class TugWorker implements Runnable {
             connection.setRequestProperty("Accept-Encoding", "identity");
             connection.connect();
 
-            long totalSize = connection.getContentLength();
+            long totalSize = connection.getContentLength() + downloadedSize;
             LogUtil.logD("[%s] File total size: %d", this, totalSize);
             if (task.getFileTotalSize() > 0 && task.getFileTotalSize() != totalSize) {
                 // file updated, need download from start
@@ -129,9 +129,11 @@ public class TugWorker implements Runnable {
                         && (readLength = is.read(buffer)) > 0) {
                     fileOutput.write(buffer, 0, readLength);
                     downloadedSize += readLength;
-                    int progress = (int) (downloadedSize / totalSize);
+                    int progress = (int) (downloadedSize * 100 / totalSize);
                     progress = Math.max(0, progress);
                     progress = Math.min(100, progress);
+                    task.setDownloadedLength(downloadedSize);
+                    LogUtil.logD("[%s] downloaded size: %d progress: %d", this, downloadedSize, progress);
                     tug.onDownloadProgress(task, progress);
                 }
                 task.setDownloadedLength(downloadedSize);

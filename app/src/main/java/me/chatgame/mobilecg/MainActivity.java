@@ -6,9 +6,7 @@ import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -46,6 +44,10 @@ public class MainActivity extends Activity implements DownloadListener {
             @Override
             public void onClick(View v) {
                 String url = inputEdit.getText().toString();
+                if (TextUtils.isEmpty(url)) {
+                    url = inputEdit.getHint().toString();
+                }
+
                 if (!TextUtils.isEmpty(url)) {
                     Uri uri = Uri.parse(url);
                     String fileName = uri.getLastPathSegment();
@@ -110,6 +112,16 @@ public class MainActivity extends Activity implements DownloadListener {
 
     @Override
     public void onDownloadPaused(final TugTask task) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                adapter.updateTask(task);
+            }
+        });
+    }
+
+    @Override
+    public void onDownloadResumed(final TugTask task) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {

@@ -46,19 +46,59 @@
             android:layout_below="@+id/id_url"
             android:textSize="11dp" />
 
-        <TextView
-            android:id="@+id/status_tv"
+        <Button
+            android:id="@+id/start_stop_button"
             android:layout_width="80dp"
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
             android:layout_alignParentRight="true"
             android:layout_centerVertical="true"
             android:gravity="center"
-            android:text="Downloading"
+            android:text="Start"
             android:textSize="12dp" />
     </RelativeLayout>
     <View
+        android:id="@+id/split1"
         android:layout_below="@+id/id_item_region"
+        android:background="@color/color_gray"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"/>
+    <LinearLayout
+        android:id="@+id/info_bar"
+        android:layout_below="@id/split1"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <TextView
+            android:id="@+id/total_size"
+            android:layout_weight="1"
+            android:textSize="11dp"
+            android:padding="4dp"
+            android:textColor="@color/color_gray"
+            android:gravity="left|center_vertical"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content" />
+        <TextView
+            android:id="@+id/downloaded_size"
+            android:layout_weight="1"
+            android:textSize="11dp"
+            android:padding="4dp"
+            android:textColor="@color/color_gray"
+            android:gravity="left|center_vertical"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content" />
+        <TextView
+            android:id="@+id/status_tv"
+            android:layout_weight="1"
+            android:textSize="11dp"
+            android:padding="4dp"
+            android:textColor="@color/color_gray"
+            android:gravity="left|center_vertical"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+    <View
+        android:layout_below="@+id/info_bar"
         android:background="@color/color_gray"
         android:layout_width="match_parent"
         android:layout_height="1dp"/>

@@ -29,6 +29,7 @@
                     android:layout_toLeftOf="@+id/download_button"
                     android:layout_toStartOf="@+id/download_button"
                     android:inputType="textUri"
+                    android:hint="http://sohu.vodnew.lxdns.com/15/98/TF5uzsp9IDdRAw8N5RYX0C.mp4"
                     android:layout_width="match_parent"
                     android:layout_height="40dp" />
 

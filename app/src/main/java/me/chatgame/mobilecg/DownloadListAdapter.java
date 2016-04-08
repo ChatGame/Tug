@@ -7,6 +7,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -14,6 +15,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.chatgame.mobilecg.tug.Tug;
 import me.chatgame.mobilecg.tug.TugTask;
 
 /**
@@ -73,6 +75,10 @@ public class DownloadListAdapter extends RecyclerView.Adapter<DownloadListAdapte
         private TextView urlView;
         private TextView localPathView;
         private TextView statusTv;
+        private Button startButton;
+        private TextView totalSizeView;
+        private TextView downloadedSizeView;
+
         private TugTask task;
         public ViewHolder(View itemView) {
             super(itemView);
@@ -81,6 +87,9 @@ public class DownloadListAdapter extends RecyclerView.Adapter<DownloadListAdapte
             urlView = (TextView) itemView.findViewById(R.id.id_url);
             localPathView = (TextView) itemView.findViewById(R.id.id_local_path);
             statusTv = (TextView) itemView.findViewById(R.id.status_tv);
+            startButton = (Button) itemView.findViewById(R.id.start_stop_button);
+            totalSizeView = (TextView) itemView.findViewById(R.id.total_size);
+            downloadedSizeView = (TextView) itemView.findViewById(R.id.downloaded_size);
 
             View item = itemView.findViewById(R.id.id_item_region);
             item.setOnLongClickListener(new View.OnLongClickListener() {
@@ -102,6 +111,21 @@ public class DownloadListAdapter extends RecyclerView.Adapter<DownloadListAdapte
                     return true;
                 }
             });
+
+            startButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    switch (task.getStatus()) {
+                        case TugTask.Status.IDLE:
+                            Tug.getInstance().resumeTask(task.getUrl());
+                            break;
+                        case TugTask.Status.DOWNLOADING:
+                        case TugTask.Status.WAITING:
+                            Tug.getInstance().pauseTask(task.getUrl());
+                            break;
+                    }
+                }
+            });
         }
 
         public void bind(TugTask task) {
@@ -111,6 +135,22 @@ public class DownloadListAdapter extends RecyclerView.Adapter<DownloadListAdapte
             urlView.setText(task.getUrl());
             localPathView.setText(task.getLocalPath());
             statusTv.setText(task.getStatusText());
+            totalSizeView.setText("Total: " + task.getFileTotalSize());
+            downloadedSizeView.setText("Down: " + task.getDownloadedLength());
+            startButton.setVisibility(View.VISIBLE);
+            switch (task.getStatus()) {
+                case TugTask.Status.IDLE:
+                    startButton.setText("Start");
+                    break;
+                case TugTask.Status.DOWNLOADED:
+                case TugTask.Status.FAILED:
+                    startButton.setVisibility(View.GONE);
+                    break;
+                case TugTask.Status.DOWNLOADING:
+                case TugTask.Status.WAITING:
+                    startButton.setText("Stop");
+                    break;
+            }
         }
     }
 }
