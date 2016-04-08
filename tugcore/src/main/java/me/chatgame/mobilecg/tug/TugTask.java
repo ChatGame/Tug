@@ -1,9 +1,12 @@
 package me.chatgame.mobilecg.tug;
 
+import android.content.ContentValues;
+import android.database.Cursor;
 import android.text.TextUtils;
 
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicLong;
+
+import me.chatgame.mobilecg.tug.db.TugDbConstant;
 
 /**
  * Created by star on 16/4/5.
@@ -38,7 +41,7 @@ public class TugTask implements Comparable<TugTask> {
     private String url;
     private String localPath;
     private long fileTotalSize;
-    private long downloadedLength;
+    private long downloadedSize;
     private int fileType;
     private int status = Status.WAITING;
     private int priority;
@@ -82,12 +85,12 @@ public class TugTask implements Comparable<TugTask> {
         this.fileTotalSize = fileTotalSize;
     }
 
-    public long getDownloadedLength() {
-        return downloadedLength;
+    public long getDownloadedSize() {
+        return downloadedSize;
     }
 
-    public void setDownloadedLength(long downloadedLength) {
-        this.downloadedLength = downloadedLength;
+    public void setDownloadedSize(long downloadedSize) {
+        this.downloadedSize = downloadedSize;
     }
 
     public int getStatus() {
@@ -180,5 +183,40 @@ public class TugTask implements Comparable<TugTask> {
             ret = (seqNum < another.seqNum ? -1 : 1);
         }
         return ret;
+    }
+
+    public ContentValues getContentValues() {
+        ContentValues contentValues = new ContentValues();
+        if (url != null) {
+            contentValues.put(TugDbConstant.TugTaskField.URL, url);
+        }
+        if (localPath != null) {
+            contentValues.put(TugDbConstant.TugTaskField.LOCAL_PATH, localPath);
+        }
+        contentValues.put(TugDbConstant.TugTaskField.FILE_TOTAL_SIZE, fileTotalSize);
+        contentValues.put(TugDbConstant.TugTaskField.DOWNLOADED_SIZE, downloadedSize);
+        contentValues.put(TugDbConstant.TugTaskField.FILE_TYPE, fileType);
+        contentValues.put(TugDbConstant.TugTaskField.STATUS, status);
+        contentValues.put(TugDbConstant.TugTaskField.PRIORITY, priority);
+        contentValues.put(TugDbConstant.TugTaskField.PROGRESS, progress);
+        return contentValues;
+    }
+
+    public void fromCursor(Cursor cursor) {
+        if (cursor != null) {
+            try {
+                id = cursor.getInt(cursor.getColumnIndex(TugDbConstant.TugTaskField.ID));
+                url = cursor.getString(cursor.getColumnIndex(TugDbConstant.TugTaskField.URL));
+                localPath = cursor.getString(cursor.getColumnIndex(TugDbConstant.TugTaskField.LOCAL_PATH));
+                fileTotalSize = cursor.getInt(cursor.getColumnIndex(TugDbConstant.TugTaskField.FILE_TOTAL_SIZE));
+                downloadedSize = cursor.getInt(cursor.getColumnIndex(TugDbConstant.TugTaskField.DOWNLOADED_SIZE));
+                fileType = cursor.getInt(cursor.getColumnIndex(TugDbConstant.TugTaskField.FILE_TYPE));
+                status = cursor.getInt(cursor.getColumnIndex(TugDbConstant.TugTaskField.STATUS));
+                priority = cursor.getInt(cursor.getColumnIndex(TugDbConstant.TugTaskField.PRIORITY));
+                progress = cursor.getInt(cursor.getColumnIndex(TugDbConstant.TugTaskField.PROGRESS));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

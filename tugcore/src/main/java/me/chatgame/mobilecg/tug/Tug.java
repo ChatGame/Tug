@@ -16,6 +16,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.PriorityBlockingQueue;
 
+import me.chatgame.mobilecg.tug.db.TugDbHelper;
+import me.chatgame.mobilecg.tug.db.TugTaskDao;
 import me.chatgame.mobilecg.tug.util.FileUtils;
 import me.chatgame.mobilecg.tug.util.LogUtil;
 
@@ -32,6 +34,7 @@ public class Tug {
     private BlockingQueue<TugTask> waitingQueue = new PriorityBlockingQueue<>();
     private Queue<TugTask> workingQueue = new ConcurrentLinkedQueue<>();
     private Queue<TugTask> idleQueue = new ConcurrentLinkedQueue<>();
+    private TugTaskDao tugTaskDao;
 
     private Tug() {
 
@@ -57,21 +60,21 @@ public class Tug {
         waitingQueue.remove(task);
         task.setStatus(TugTask.Status.IDLE);
         idleQueue.offer(task);
-        // TODO: 16/4/7 update in db
+        tugTaskDao.updateTask(task);
     }
 
     void moveTaskFromIdleToWaitingQueue(TugTask task) {
         idleQueue.remove(task);
         task.setStatus(TugTask.Status.WAITING);
         waitingQueue.offer(task);
-        // TODO: 16/4/7 update in db
+        tugTaskDao.updateTask(task);
     }
 
     void addRetryTask(TugTask task) {
         workingQueue.remove(task);
         task.setStatus(TugTask.Status.WAITING);
         waitingQueue.offer(task);
-        // TODO: 16/4/6 update in db
+        tugTaskDao.updateTask(task);
     }
 
     public List<TugTask> getAllTasks() {
@@ -150,7 +153,7 @@ public class Tug {
         if (!containsInAllQueues(task)) {
             task.setStatus(TugTask.Status.WAITING);
             waitingQueue.offer(task);
-            // TODO: 16/4/6 update in db
+            tugTaskDao.addTask(task);
         } else {
             TugTask foundTask = findTaskFromQueue(idleQueue, task);
             if (foundTask != null) {
@@ -236,12 +239,11 @@ public class Tug {
     public void deleteTask(String url) {
         cancelWorkingTask(url);
         TugTask task = removeTaskFromQueue(url);
-        // TODO: 16/4/7 remove task from db
-
         if (task == null) {
             task = new TugTask();
             task.setUrl(url);
         }
+        tugTaskDao.deleteTask(task);
         downloadDeleted(task);
     }
 
@@ -317,6 +319,13 @@ public class Tug {
         return foundTask;
     }
 
+    public void loadTaskFromDb() {
+        List<TugTask> tasks = tugTaskDao.getAllTasks();
+        for (TugTask task : tasks) {
+            
+        }
+    }
+
     public void start() {
         executor = Executors.newFixedThreadPool(threads);
         for (int i = 0; i < threads; i++) {
@@ -329,7 +338,7 @@ public class Tug {
     synchronized void downloadStart(TugTask task) {
         task.setStatus(TugTask.Status.DOWNLOADING);
         workingQueue.offer(task);
-        // TODO: 16/4/6 update in db
+        tugTaskDao.updateTask(task);
         Set<DownloadListener> listeners = listenerMap.get(task.getUrl());
         if (listeners != null) {
             for (DownloadListener listener : listeners) {
@@ -351,7 +360,7 @@ public class Tug {
     synchronized void downloadSuccess(TugTask task) {
         task.setStatus(TugTask.Status.DOWNLOADED);
         workingQueue.remove(task);
-        // TODO: 16/4/6 update in db
+        tugTaskDao.updateTask(task);
         Set<DownloadListener> listeners = listenerMap.get(task.getUrl());
         if (listeners != null) {
             for (DownloadListener listener : listeners) {
@@ -364,7 +373,7 @@ public class Tug {
     synchronized void downloadFail(TugTask task) {
         task.setStatus(TugTask.Status.FAILED);
         workingQueue.remove(task);
-        // TODO: 16/4/6 update in db
+        tugTaskDao.updateTask(task);
         Set<DownloadListener> listeners = listenerMap.get(task.getUrl());
         if (listeners != null) {
             for (DownloadListener listener : listeners) {
@@ -434,6 +443,10 @@ public class Tug {
                 tug.rootPath = FileUtils.getCacheDir(context);
             }
             LogUtil.NEED_LOG = needLog;
+
+            TugDbHelper helper = new TugDbHelper(context.getApplicationContext());
+            TugDbHelper.setInstance(helper);
+            tug.tugTaskDao = new TugTaskDao();
             return tug;
         }
     }

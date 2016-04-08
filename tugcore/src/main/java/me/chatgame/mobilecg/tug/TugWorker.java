@@ -108,12 +108,13 @@ public class TugWorker implements Runnable {
             if (task.getFileTotalSize() > 0 && task.getFileTotalSize() != totalSize) {
                 // file updated, need download from start
                 task.setFileTotalSize(0);
-                task.setDownloadedLength(0);
+                task.setDownloadedSize(0);
                 FileUtils.deleteFile(tmpFile);
                 download(task);
                 return;
             } else {
                 task.setFileTotalSize(totalSize);
+                task.setDownloadedSize(downloadedSize);
             }
 
             InputStream is = null;
@@ -132,18 +133,18 @@ public class TugWorker implements Runnable {
                     int progress = (int) (downloadedSize * 100 / totalSize);
                     progress = Math.max(0, progress);
                     progress = Math.min(100, progress);
-                    task.setDownloadedLength(downloadedSize);
+                    task.setDownloadedSize(downloadedSize);
                     LogUtil.logD("[%s] downloaded size: %d progress: %d", this, downloadedSize, progress);
                     tug.onDownloadProgress(task, progress);
                 }
-                task.setDownloadedLength(downloadedSize);
+                task.setDownloadedSize(downloadedSize);
                 LogUtil.logD("[%s] downloaded size: %d", this, downloadedSize);
                 if (isTaskCancelled()) {
                     LogUtil.logD("[%s] task cancelled", this);
                     setCurrentTask(null);
                     return;
                 }
-//                if (task.getDownloadedLength() == task.getFileTotalSize()) {
+//                if (task.getDownloadedSize() == task.getFileTotalSize()) {
                     boolean ret = FileUtils.renameFile(tmpFile, task.getLocalPath());
                     if (ret) {
                         LogUtil.logD("[%s] download success url: %s", this, task.getUrl());

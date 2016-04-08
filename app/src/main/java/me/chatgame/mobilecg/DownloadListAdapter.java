@@ -136,7 +136,7 @@ public class DownloadListAdapter extends RecyclerView.Adapter<DownloadListAdapte
             localPathView.setText(task.getLocalPath());
             statusTv.setText(task.getStatusText());
             totalSizeView.setText("Total: " + task.getFileTotalSize());
-            downloadedSizeView.setText("Down: " + task.getDownloadedLength());
+            downloadedSizeView.setText("Down: " + task.getDownloadedSize());
             startButton.setVisibility(View.VISIBLE);
             switch (task.getStatus()) {
                 case TugTask.Status.IDLE:
