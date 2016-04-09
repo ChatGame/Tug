@@ -3,6 +3,7 @@ package me.chatgame.mobilecg.tug;
 import android.content.Context;
 import android.text.TextUtils;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -77,7 +78,11 @@ public class Tug {
         tugTaskDao.updateTask(task);
     }
 
-    public List<TugTask> getAllTasks() {
+    public List<TugTask> getAllTasksInDb() {
+        return tugTaskDao.getAllTasks();
+    }
+
+    public List<TugTask> getAllTasksInMemory() {
         List<TugTask> allTasks = new ArrayList<>();
         allTasks.addAll(waitingQueue);
         allTasks.addAll(workingQueue);
@@ -85,7 +90,7 @@ public class Tug {
         return allTasks;
     }
 
-    private synchronized void addListener(String url, DownloadListener listener) {
+    public synchronized void addListener(String url, DownloadListener listener) {
         if (listener == null) {
             return;
         }
@@ -198,8 +203,11 @@ public class Tug {
             task.setStatus(TugTask.Status.WAITING);
             task.setUrl(url);
             task.setLocalPath(localPath);
-            if (FileUtils.isFileExist(localPath)) {
+            File localFile = new File(localPath);
+            if (localFile.exists()) {
                 if (listener != null) {
+                    task.setFileTotalSize(localFile.length());
+                    task.setDownloadedSize(localFile.length());
                     task.setProgress(100);
                     task.setStatus(TugTask.Status.DOWNLOADED);
                     listener.onDownloadProgress(task);
@@ -320,13 +328,14 @@ public class Tug {
     }
 
     public void loadTaskFromDb() {
-        List<TugTask> tasks = tugTaskDao.getAllTasks();
+        List<TugTask> tasks = tugTaskDao.getUnFinishedTasks();
         for (TugTask task : tasks) {
-            
+            moveTaskToIdleQueue(task);
         }
     }
 
     public void start() {
+        loadTaskFromDb();
         executor = Executors.newFixedThreadPool(threads);
         for (int i = 0; i < threads; i++) {
             TugWorker worker = new TugWorker(this);

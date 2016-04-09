@@ -58,7 +58,29 @@ public class TugTaskDao {
         return tasks;
     }
 
-    private void insertOrUpdate(TugTask task) {
+    public List<TugTask> getUnFinishedTasks() {
+        List<TugTask> tasks = new ArrayList<>();
+        Cursor cursor = db.query(TugDbConstant.Table.TUG_TASK, null,
+                TugDbConstant.TugTaskField.STATUS + " IN (?, ?, ?)",
+                new String[]{String.valueOf(TugTask.Status.IDLE), String.valueOf(TugTask.Status.WAITING),
+                        String.valueOf(TugTask.Status.DOWNLOADING)}, null, null, null);
+        try {
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    TugTask task = new TugTask();
+                    task.fromCursor(cursor);
+                    tasks.add(task);
+                } while (cursor.moveToNext());
+            }
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        return tasks;
+    }
+
+    private synchronized void insertOrUpdate(TugTask task) {
         Cursor cursor = db.query(TugDbConstant.Table.TUG_TASK, null, TugDbConstant.TugTaskField.URL + "=?", new String[]{task.getUrl()}, null, null, null);
         boolean needInsert = true;
         ContentValues contentValues = task.getContentValues();

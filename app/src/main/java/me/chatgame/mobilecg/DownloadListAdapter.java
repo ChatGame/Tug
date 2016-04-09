@@ -15,6 +15,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.chatgame.mobilecg.tug.DownloadListener;
 import me.chatgame.mobilecg.tug.Tug;
 import me.chatgame.mobilecg.tug.TugTask;
 
@@ -32,7 +33,8 @@ public class DownloadListAdapter extends RecyclerView.Adapter<DownloadListAdapte
     }
 
     public void setTasks(List<TugTask> tasks) {
-        this.tasks = tasks;
+        this.tasks.clear();
+        this.tasks.addAll(tasks);
         notifyDataSetChanged();
     }
 
@@ -117,6 +119,9 @@ public class DownloadListAdapter extends RecyclerView.Adapter<DownloadListAdapte
                 public void onClick(View v) {
                     switch (task.getStatus()) {
                         case TugTask.Status.IDLE:
+                            if (context instanceof DownloadListener) {
+                                Tug.getInstance().addListener(task.getUrl(), (DownloadListener) context);
+                            }
                             Tug.getInstance().resumeTask(task.getUrl());
                             break;
                         case TugTask.Status.DOWNLOADING:

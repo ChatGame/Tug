@@ -34,5 +34,8 @@ public interface TugDbConstant {
                 + TugTaskField.PRIORITY + " SMALLINT DEFAULT 0, "
                 + TugTaskField.PROGRESS + " SMALLINT DEFAULT 0 "
                 + ")";
+        String CREATE_TUG_TASK_INDEX = "CREATE INDEX tug_task_index ON " + Table.TUG_TASK
+                + " (" + TugTaskField.URL + ", "
+                + TugTaskField.STATUS + ")";
     }
 }

@@ -32,6 +32,7 @@ public class TugDbHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         try {
             db.execSQL(TugDbConstant.TableCreate.CREATE_TUG_TASK);
+            db.execSQL(TugDbConstant.TableCreate.CREATE_TUG_TASK_INDEX);
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -38,6 +38,9 @@ public class MainActivity extends Activity implements DownloadListener {
 
         adapter = new DownloadListAdapter(this);
         recyclerView.setAdapter(adapter);
+
+        adapter.setTasks(Tug.getInstance().getAllTasksInDb());
+
         inputEdit = (EditText) findViewById(R.id.url_input);
         View button = findViewById(R.id.download_button);
         button.setOnClickListener(new View.OnClickListener() {
