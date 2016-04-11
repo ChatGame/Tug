@@ -384,7 +384,7 @@ public class Tug {
 
     public void start() {
         loadTaskFromDb();
-        executor = Executors.newFixedThreadPool(threads);
+        executor = Executors.newFixedThreadPool(threads, new TugThreadFactory());
         for (int i = 0; i < threads; i++) {
             TugWorker worker = new TugWorker(this);
             workers.add(worker);
