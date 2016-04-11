@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="mobilecg.chatgame.me.tugcore">
+    package="me.chatgame.mobilecg.tugcore">
 
     <application
         android:allowBackup="true"

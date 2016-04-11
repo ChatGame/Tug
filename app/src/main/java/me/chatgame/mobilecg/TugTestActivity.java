@@ -8,6 +8,7 @@ import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import me.chatgame.mobilecg.tug.DownloadListener;
@@ -18,7 +19,7 @@ import me.chatgame.mobilecg.tug.util.LogUtil;
 /**
  * Created by star on 16/4/7.
  */
-public class MainActivity extends Activity implements DownloadListener {
+public class TugTestActivity extends Activity implements DownloadListener {
 
     private RecyclerView recyclerView;
     private DownloadListAdapter adapter;
@@ -26,7 +27,7 @@ public class MainActivity extends Activity implements DownloadListener {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_tug_test);
 
         Tug tug = new Tug.Builder(this).setNeedLog(true).setThreads(2).build();
         Tug.setInstance(tug);
@@ -42,6 +43,9 @@ public class MainActivity extends Activity implements DownloadListener {
         adapter.setTasks(Tug.getInstance().getAllTasksInDb());
 
         inputEdit = (EditText) findViewById(R.id.url_input);
+        TextView tugWorkerNumTv = (TextView) findViewById(R.id.tug_worker_num);
+        tugWorkerNumTv.setText("Workers: " + Tug.getInstance().getCurrentWorkerNum());
+
         View button = findViewById(R.id.download_button);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -55,12 +59,12 @@ public class MainActivity extends Activity implements DownloadListener {
                     Uri uri = Uri.parse(url);
                     String fileName = uri.getLastPathSegment();
                     LogUtil.logD("filename: %s", fileName);
-                    TugTask task = Tug.getInstance().addTask(url, TugTask.FileType.FILE, null, fileName, MainActivity.this);
+                    TugTask task = Tug.getInstance().addTask(url, TugTask.FileType.FILE, null, fileName, TugTestActivity.this);
                     if (task != null) {
                         adapter.addTask(task);
                     }
                 } else {
-                    Toast.makeText(MainActivity.this, "Pls input valid url", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(TugTestActivity.this, "Pls input valid url", Toast.LENGTH_SHORT).show();
                 }
                 inputEdit.setText("");
             }
@@ -131,5 +135,11 @@ public class MainActivity extends Activity implements DownloadListener {
                 adapter.updateTask(task);
             }
         });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Tug.getInstance().removeListener(this);
     }
 }

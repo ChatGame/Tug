@@ -5,6 +5,7 @@ import android.text.TextUtils;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -114,6 +115,24 @@ public class Tug {
         Set<DownloadListener> list = listenerMap.get(url);
         if (list != null) {
             list.remove(listener);
+        }
+    }
+
+    /**
+     * Remove specified listener from all urls
+     * @param listener
+     */
+    public synchronized void removeListener(DownloadListener listener) {
+        if (listener == null) {
+            return;
+        }
+        Collection<Set<DownloadListener>> collection = listenerMap.values();
+        if (collection != null) {
+            for (Set<DownloadListener> listenerSet : collection) {
+                if (listenerSet != null) {
+                    listenerSet.remove(listener);
+                }
+            }
         }
     }
 
@@ -418,6 +437,10 @@ public class Tug {
                 listener.onDownloadResumed(task);
             }
         }
+    }
+
+    public int getCurrentWorkerNum() {
+        return workers.size();
     }
 
     public static class Builder {

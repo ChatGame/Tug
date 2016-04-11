@@ -56,7 +56,7 @@ public class DownloadListAdapter extends RecyclerView.Adapter<DownloadListAdapte
 
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view = inflater.inflate(R.layout.view_download_item, null);
+        View view = inflater.inflate(R.layout.view_tug_test_download_item, null);
         return new ViewHolder(view);
     }
 
