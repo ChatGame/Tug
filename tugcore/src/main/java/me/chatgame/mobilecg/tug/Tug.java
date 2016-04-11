@@ -203,13 +203,14 @@ public class Tug {
 
     /**
      * Add download task
-     * @param url
+     * @param url url to download
      * @param fileType see {@link TugTask.FileType}
      * @param destLocalPath local path to save the downloaded file
      * @param listener callback listener
+     * @param priority task priority, see {@linkplain TugTask.Priority}
      * @return a tug task that is added, if task exists, the existed task will be returned
      */
-    public TugTask addTask(String url, int fileType, String destLocalPath, DownloadListener listener) {
+    public TugTask addTask(String url, int fileType, String destLocalPath, DownloadListener listener, int priority) {
         if (TextUtils.isEmpty(url)) {
             return null;
         }
@@ -223,6 +224,7 @@ public class Tug {
             task.setStatus(TugTask.Status.WAITING);
             task.setUrl(url);
             task.setLocalPath(localPath);
+            task.setPriority(priority);
             File localFile = new File(localPath);
             if (localFile.exists()) {
                 if (listener != null) {
@@ -244,20 +246,46 @@ public class Tug {
     /**
      * Add download task
      * @param url
-     * @param fileType
-     * @param destLocalFolder
-     * @param savedFileName
-     * @param listener
+     * @param fileType see {@link TugTask.FileType}
+     * @param destLocalPath local path to save the downloaded file
+     * @param listener callback listener
+     * @return a tug task that is added, if task exists, the existed task will be returned
+     */
+    public TugTask addTask(String url, int fileType, String destLocalPath, DownloadListener listener) {
+        return addTask(url, fileType, destLocalPath, listener, TugTask.Priority.NORMAL);
+    }
+
+    /**
+     * Add download task
+     * @param url url to download
+     * @param fileType see {@link TugTask.FileType}
+     * @param destLocalFolder parent folder to save the downloaded file
+     * @param savedFileName file name to save
+     * @param listener callback listener
+     * @param priority task priority, see {@linkplain TugTask.Priority}
      * @return
      */
-    public TugTask addTask(String url, int fileType, String destLocalFolder, String savedFileName, DownloadListener listener) {
+    public TugTask addTask(String url, int fileType, String destLocalFolder, String savedFileName, DownloadListener listener, int priority) {
         String localPath = null;
         if (!TextUtils.isEmpty(destLocalFolder) && !TextUtils.isEmpty(savedFileName)) {
             localPath = destLocalFolder + savedFileName;
         } else if (!TextUtils.isEmpty(savedFileName)) {
             localPath = FileUtils.getLocalFilePathBySpecifiedName(savedFileName, fileType, rootPath);
         }
-        return addTask(url, fileType, localPath, listener);
+        return addTask(url, fileType, localPath, listener, priority);
+    }
+
+    /**
+     * Add download task
+     * @param url url to download
+     * @param fileType see {@link TugTask.FileType}
+     * @param destLocalFolder parent folder to save the downloaded file
+     * @param savedFileName file name to save
+     * @param listener callback listener
+     * @return
+     */
+    public TugTask addTask(String url, int fileType, String destLocalFolder, String savedFileName, DownloadListener listener) {
+        return addTask(url, fileType, destLocalFolder, savedFileName, listener, TugTask.Priority.NORMAL);
     }
 
     /**
