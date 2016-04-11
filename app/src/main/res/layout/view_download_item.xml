@@ -30,9 +30,7 @@
             android:layout_width="match_parent"
             android:layout_height="30dp"
             android:layout_toEndOf="@+id/id_seq_num"
-            android:layout_toLeftOf="@+id/status_tv"
             android:layout_toRightOf="@+id/id_seq_num"
-            android:layout_toStartOf="@+id/status_tv"
             android:textSize="11dp" />
 
         <TextView
