@@ -2,6 +2,7 @@ package me.chatgame.mobilecg.tug;
 
 import android.content.Context;
 import android.text.TextUtils;
+import android.util.Log;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -448,6 +449,7 @@ public class Tug {
         private String rootPath;
         private Context context;
         private boolean needLog = true;
+        private int logLevel = Log.INFO;
         public Builder(Context context) {
             this.context = context;
         }
@@ -467,6 +469,11 @@ public class Tug {
             return this;
         }
 
+        public Builder setLogLevel(int logLevel) {
+            this.logLevel = logLevel;
+            return this;
+        }
+
         public Tug build() {
             Tug tug = new Tug();
             tug.threads = Builder.this.threads;
@@ -475,7 +482,7 @@ public class Tug {
                 tug.rootPath = FileUtils.getCacheDir(context);
             }
             LogUtil.NEED_LOG = needLog;
-
+            LogUtil.LOG_LEVEL = logLevel;
             TugDbHelper helper = new TugDbHelper(context.getApplicationContext());
             TugDbHelper.setInstance(helper);
             tug.tugTaskDao = new TugTaskDao();
