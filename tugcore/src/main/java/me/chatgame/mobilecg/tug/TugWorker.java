@@ -46,7 +46,7 @@ public class TugWorker implements Runnable {
 
     @Override
     public void run() {
-        LogUtil.logD("[%s] running...", this);
+        LogUtil.logI("[%s] running...", this);
         while (true) {
             try {
                 TugTask task = tug.takeFromWaitingQueue();
@@ -54,17 +54,19 @@ public class TugWorker implements Runnable {
                 tug.downloadStart(task);
                 download(task);
             } catch (InterruptedException e) {
+                LogUtil.logW(e.getMessage());
                 e.printStackTrace();
             } catch (IOException e) {
+                LogUtil.logW(e.getMessage());
                 e.printStackTrace();
                 TugTask task = getCurrentTask();
                 if (task != null) {
                     if (task.getRetryCount() > 0) {
-                        LogUtil.logD("[%s] retry download url: %s", this, task.getUrl());
+                        LogUtil.logI("[%s] retry download url: %s", this, task.getUrl());
                         task.decreaseRetryCount();
                         tug.addRetryTask(task);
                     } else {
-                        LogUtil.logD("[%s] download failed url: %s", this, task.getUrl());
+                        LogUtil.logI("[%s] download failed url: %s", this, task.getUrl());
                         tug.downloadFail(task);
                     }
                     setCurrentTask(null);
@@ -74,7 +76,7 @@ public class TugWorker implements Runnable {
     }
 
     private void download(TugTask task) throws IOException {
-        LogUtil.logD("[%s] Download task - url: %s", this, task.getUrl());
+        LogUtil.logI("[%s] Download task - url: %s", this, task.getUrl());
         setTaskCancelled(false);
         String tmpFilePath = task.getLocalPath() + ".tmp";
         File tmpFile = new File(tmpFilePath);
@@ -98,13 +100,13 @@ public class TugWorker implements Runnable {
             connection.setConnectTimeout(TIMEOUT);
             connection.setReadTimeout(TIMEOUT);
 
-            LogUtil.logD("[%s] Download range from %d -", this, downloadedSize);
+            LogUtil.logI("[%s] Download range from %d -", this, downloadedSize);
             connection.setRequestProperty("Range", "bytes=" + downloadedSize + "-");
             connection.setRequestProperty("Accept-Encoding", "identity");
             connection.connect();
 
             long totalSize = connection.getContentLength() + downloadedSize;
-            LogUtil.logD("[%s] File total size: %d", this, totalSize);
+            LogUtil.logI("[%s] File total size: %d", this, totalSize);
             if (task.getFileTotalSize() > 0 && task.getFileTotalSize() != totalSize) {
                 // file updated, need download from start
                 task.setFileTotalSize(0);
@@ -138,26 +140,24 @@ public class TugWorker implements Runnable {
                     tug.onDownloadProgress(task, progress);
                 }
                 task.setDownloadedSize(downloadedSize);
-                LogUtil.logD("[%s] downloaded size: %d", this, downloadedSize);
+                LogUtil.logI("[%s] downloaded size: %d", this, downloadedSize);
                 if (isTaskCancelled()) {
-                    LogUtil.logD("[%s] task cancelled", this);
+                    LogUtil.logI("[%s] task cancelled", this);
                     setCurrentTask(null);
                     return;
                 }
-//                if (task.getDownloadedSize() == task.getFileTotalSize()) {
-                    boolean ret = FileUtils.renameFile(tmpFile, task.getLocalPath());
-                    if (ret) {
-                        LogUtil.logD("[%s] download success url: %s", this, task.getUrl());
-                        tug.onDownloadProgress(task, 100);
-                        tug.downloadSuccess(task);
-                    } else {
-                        LogUtil.logW("[%s] rename file failed after download - set task as failed", this);
-                        tug.downloadFail(task);
-                    }
-                    setCurrentTask(null);
-//                }
+                boolean ret = FileUtils.renameFile(tmpFile, task.getLocalPath());
+                if (ret) {
+                    LogUtil.logI("[%s] download success url: %s", this, task.getUrl());
+                    tug.onDownloadProgress(task, 100);
+                    tug.downloadSuccess(task);
+                } else {
+                    LogUtil.logW("[%s] rename file failed after download - set task as failed", this);
+                    tug.downloadFail(task);
+                }
+                setCurrentTask(null);
             } finally {
-                LogUtil.logD("[%s] close input stream and file output", this);
+                LogUtil.logI("[%s] close input stream and file output", this);
                 if (is != null) {
                     is.close();
                     is = null;
@@ -168,7 +168,7 @@ public class TugWorker implements Runnable {
                 }
             }
         } finally {
-            LogUtil.logD("[%s] close http connection", this);
+            LogUtil.logI("[%s] close http connection", this);
             if (connection != null) {
                 connection.disconnect();
             }
