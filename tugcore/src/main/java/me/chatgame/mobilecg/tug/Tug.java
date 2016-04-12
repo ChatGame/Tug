@@ -30,7 +30,8 @@ import me.chatgame.mobilecg.tug.util.LogUtil;
 public class Tug {
     private static Tug instance;
     private int threads;
-    private Executor executor;
+    private Executor taskExecutor;
+    private Executor daoExecutor = Executors.newSingleThreadExecutor(new TugThreadFactory());
     private String rootPath;
     private Map<String, Set<DownloadListener>> listenerMap = new HashMap<>();
     private List<TugWorker> workers = new ArrayList<>();
@@ -178,7 +179,14 @@ public class Tug {
         if (!containsInAllQueues(task)) {
             task.setStatus(TugTask.Status.WAITING);
             waitingQueue.offer(task);
-            tugTaskDao.addTask(task);
+
+            final TugTask finalTask = task;
+            daoExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    tugTaskDao.addTask(finalTask);
+                }
+            });
         } else {
             TugTask foundTask = findTaskFromQueue(idleQueue, task);
             if (foundTask != null) {
@@ -384,11 +392,11 @@ public class Tug {
 
     public void start() {
         loadTaskFromDb();
-        executor = Executors.newFixedThreadPool(threads, new TugThreadFactory());
+        taskExecutor = Executors.newFixedThreadPool(threads, new TugThreadFactory());
         for (int i = 0; i < threads; i++) {
             TugWorker worker = new TugWorker(this);
             workers.add(worker);
-            executor.execute(worker);
+            taskExecutor.execute(worker);
         }
     }
 

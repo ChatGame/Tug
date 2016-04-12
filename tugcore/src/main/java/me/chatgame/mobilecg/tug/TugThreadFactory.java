@@ -27,8 +27,8 @@ public class TugThreadFactory implements ThreadFactory {
                 0);
         if (t.isDaemon())
             t.setDaemon(false);
-        if (t.getPriority() != Thread.MIN_PRIORITY)
-            t.setPriority(Thread.MIN_PRIORITY);
+        t.setPriority(Thread.MIN_PRIORITY);
+
         return t;
     }
 }
