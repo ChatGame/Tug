@@ -301,6 +301,10 @@ public class Tug {
      * @param url
      */
     public void deleteTask(String url) {
+        if (TextUtils.isEmpty(url)) {
+            return;
+        }
+
         cancelWorkingTask(url);
         TugTask task = removeTaskFromQueue(url);
         if (task == null) {
@@ -309,6 +313,20 @@ public class Tug {
         }
         tugTaskDao.deleteTask(task);
         downloadDeleted(task);
+    }
+
+    /**
+     * Remove and delete task, if local file in task exists, it will also be deleted.
+     * @param task
+     */
+    public void deleteTask(TugTask task) {
+        if (task == null) {
+            return;
+        }
+        if (!TextUtils.isEmpty(task.getLocalPath())) {
+            FileUtils.deleteFile(new File(task.getLocalPath()));
+        }
+        deleteTask(task.getUrl());
     }
 
     /**
