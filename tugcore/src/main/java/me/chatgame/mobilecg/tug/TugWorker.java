@@ -156,7 +156,14 @@ public class TugWorker implements Runnable {
                     long endTime = System.currentTimeMillis();
                     long duration = endTime - startTime;
                     long seconds = TimeUnit.MILLISECONDS.toSeconds(duration);
-                    int speed = (int) (leftSize / (1024 * seconds));
+                    int speed;
+                    if (seconds != 0) {
+                        speed = (int) (leftSize / (1024 * seconds));
+                    } else if (duration != 0){
+                        speed = (int) (leftSize * 1000 / (1024 * duration));
+                    } else {
+                        speed = Integer.MAX_VALUE;
+                    }
                     LogUtil.logI("[%s] download success url: %s cost time: %d(s) speed: %d(kB/s)", this, task.getUrl(), seconds, speed);
                     tug.onDownloadProgress(task, 100);
                     tug.downloadSuccess(task);
