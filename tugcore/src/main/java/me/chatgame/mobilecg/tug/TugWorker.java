@@ -18,14 +18,15 @@ import me.chatgame.mobilecg.tug.util.LogUtil;
  */
 public class TugWorker implements Runnable {
     private static final int TIMEOUT = 10 * 1000;
-    private static final int BUFFER_SIZE = 300 * 1024;
-    private static final int READ_BUFFER_SIZE = 300 * 1024;
+
     static final AtomicLong seq = new AtomicLong(0);
     private final long seqNum;
 
     private Tug tug;
     private TugTask currentTask;
     private boolean taskCancelled = false;
+
+
     public TugWorker(Tug tug) {
         seqNum = seq.getAndIncrement();
         this.tug = tug;
@@ -127,11 +128,13 @@ public class TugWorker implements Runnable {
             InputStream is = null;
             RandomAccessFile fileOutput = null;
             try {
-                is = new BufferedInputStream(connection.getInputStream(), BUFFER_SIZE);
+                int bufferSize = tug.getBufferSizeByNetwork();
+                LogUtil.logI("[%s] current buffer size: %d", this, bufferSize);
+                is = new BufferedInputStream(connection.getInputStream(), bufferSize);
                 fileOutput = new RandomAccessFile(tmpFile, "rwd");
                 fileOutput.seek(downloadedSize);
 
-                byte[] buffer = new byte[READ_BUFFER_SIZE];
+                byte[] buffer = new byte[bufferSize];
                 int readLength;
                 while (!isTaskCancelled()
                         && (readLength = is.read(buffer)) > 0) {
@@ -199,4 +202,5 @@ public class TugWorker implements Runnable {
     public String toString() {
         return "TugWorker-" + seqNum;
     }
+
 }

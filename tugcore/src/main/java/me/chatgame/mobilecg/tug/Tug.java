@@ -23,11 +23,20 @@ import me.chatgame.mobilecg.tug.db.TugDbHelper;
 import me.chatgame.mobilecg.tug.db.TugTaskDao;
 import me.chatgame.mobilecg.tug.util.FileUtils;
 import me.chatgame.mobilecg.tug.util.LogUtil;
+import me.chatgame.mobilecg.tug.util.NetworkType;
+import me.chatgame.mobilecg.tug.util.NetworkUtil;
+import me.chatgame.mobilecg.tug.util.interfaces.INetworkUtil;
 
 /**
  * Created by star on 16/4/5.
  */
 public class Tug {
+    private static final int BUFFER_SIZE_WIFI = 250 * 1024;
+    private static final int BUFFER_SIZE_4G = 100 * 1024;
+    private static final int BUFFER_SIZE_3G = 50 * 1024;
+    private static final int BUFFER_SIZE_2G = 10 * 1024;
+
+
     private static Tug instance;
     private int threads;
     private Executor taskExecutor;
@@ -39,6 +48,8 @@ public class Tug {
     private Queue<TugTask> workingQueue = new ConcurrentLinkedQueue<>();
     private Queue<TugTask> idleQueue = new ConcurrentLinkedQueue<>();
     private TugTaskDao tugTaskDao;
+    private Context context;
+    private INetworkUtil networkUtil;
 
     private Tug() {
 
@@ -498,6 +509,24 @@ public class Tug {
         return workers.size();
     }
 
+    Context getContext() {
+        return context;
+    }
+
+    int getBufferSizeByNetwork() {
+        NetworkType type = networkUtil.getNetworkType();
+        switch (type) {
+            case NETWORK_WIFI:
+                return BUFFER_SIZE_WIFI;
+            case NETWORK_4G:
+                return BUFFER_SIZE_4G;
+            case NETWORK_3G:
+                return BUFFER_SIZE_3G;
+            default:
+                return BUFFER_SIZE_2G;
+        }
+    }
+
     public static class Builder {
         private int threads = 2;
         private String rootPath;
@@ -530,8 +559,9 @@ public class Tug {
 
         public Tug build() {
             Tug tug = new Tug();
-            tug.threads = Builder.this.threads;
-            tug.rootPath = Builder.this.rootPath;
+            tug.context = context.getApplicationContext();
+            tug.threads = threads;
+            tug.rootPath = rootPath;
             if (TextUtils.isEmpty(tug.rootPath)) {
                 tug.rootPath = FileUtils.getCacheDir(context);
             }
@@ -540,6 +570,7 @@ public class Tug {
             TugDbHelper helper = new TugDbHelper(context.getApplicationContext());
             TugDbHelper.setInstance(helper);
             tug.tugTaskDao = new TugTaskDao();
+            tug.networkUtil = new NetworkUtil(context);
             return tug;
         }
     }
