@@ -18,8 +18,8 @@ import me.chatgame.mobilecg.tug.util.LogUtil;
  */
 public class TugWorker implements Runnable {
     private static final int TIMEOUT = 10 * 1000;
-    private static final int BUFFER_SIZE = 250 * 1024;
-    private static final int READ_BUFFER_SIZE = 250 * 1024;
+    private static final int BUFFER_SIZE = 300 * 1024;
+    private static final int READ_BUFFER_SIZE = 300 * 1024;
     static final AtomicLong seq = new AtomicLong(0);
     private final long seqNum;
 
