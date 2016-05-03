@@ -22,7 +22,7 @@
             android:layout_below="@+id/tug_worker_num"
             android:layout_toLeftOf="@+id/download_button"
             android:layout_toStartOf="@+id/download_button"
-            android:hint="http://www.chatgame.me/static_file/ChatGame.apk"
+            android:hint="http://static.chatgame.me/static_file/game/1001_test/download/game_1.2.zip"
             android:inputType="textUri" />
 
         <Button

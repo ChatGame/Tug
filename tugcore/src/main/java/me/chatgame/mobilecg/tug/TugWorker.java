@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import me.chatgame.mobilecg.tug.util.FileUtils;
@@ -17,6 +18,8 @@ import me.chatgame.mobilecg.tug.util.LogUtil;
  */
 public class TugWorker implements Runnable {
     private static final int TIMEOUT = 10 * 1000;
+    private static final int BUFFER_SIZE = 250 * 1024;
+    private static final int READ_BUFFER_SIZE = 250 * 1024;
     static final AtomicLong seq = new AtomicLong(0);
     private final long seqNum;
 
@@ -76,6 +79,7 @@ public class TugWorker implements Runnable {
     }
 
     private void download(TugTask task) throws IOException {
+        long startTime = System.currentTimeMillis();
         LogUtil.logI("[%s] Download task - url: %s", this, task.getUrl());
         setTaskCancelled(false);
         String tmpFilePath = task.getLocalPath() + ".tmp";
@@ -105,8 +109,9 @@ public class TugWorker implements Runnable {
             connection.setRequestProperty("Accept-Encoding", "identity");
             connection.connect();
 
-            long totalSize = connection.getContentLength() + downloadedSize;
-            LogUtil.logI("[%s] File total size: %d", this, totalSize);
+            long leftSize = connection.getContentLength();
+            long totalSize = leftSize + downloadedSize;
+            LogUtil.logI("[%s] File total size: %d, need download size: %d", this, totalSize, leftSize);
             if (task.getFileTotalSize() > 0 && task.getFileTotalSize() != totalSize) {
                 // file updated, need download from start
                 task.setFileTotalSize(0);
@@ -122,11 +127,11 @@ public class TugWorker implements Runnable {
             InputStream is = null;
             RandomAccessFile fileOutput = null;
             try {
-                is = new BufferedInputStream(connection.getInputStream());
+                is = new BufferedInputStream(connection.getInputStream(), BUFFER_SIZE);
                 fileOutput = new RandomAccessFile(tmpFile, "rwd");
                 fileOutput.seek(downloadedSize);
 
-                byte[] buffer = new byte[2 * 1024];
+                byte[] buffer = new byte[READ_BUFFER_SIZE];
                 int readLength;
                 while (!isTaskCancelled()
                         && (readLength = is.read(buffer)) > 0) {
@@ -148,7 +153,11 @@ public class TugWorker implements Runnable {
                 }
                 boolean ret = FileUtils.renameFile(tmpFile, task.getLocalPath());
                 if (ret) {
-                    LogUtil.logI("[%s] download success url: %s", this, task.getUrl());
+                    long endTime = System.currentTimeMillis();
+                    long duration = endTime - startTime;
+                    long seconds = TimeUnit.MILLISECONDS.toSeconds(duration);
+                    int speed = (int) (leftSize / (1024 * seconds));
+                    LogUtil.logI("[%s] download success url: %s cost time: %d(s) speed: %d(kB/s)", this, task.getUrl(), seconds, speed);
                     tug.onDownloadProgress(task, 100);
                     tug.downloadSuccess(task);
                 } else {
