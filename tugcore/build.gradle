@@ -1,4 +1,5 @@
 apply plugin: 'com.android.library'
+apply plugin: 'maven-publish'
 
 android {
     compileSdkVersion 23
@@ -22,4 +23,35 @@ dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:23.1.1'
+}
+
+task sourceJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    classifier "source"
+}
+
+publishing {
+    publications {
+
+        repositories.maven {
+            url 'http://192.168.1.25:8081/repository/internal'
+            credentials {
+                username "android"
+                password "android1234"
+            }
+        }
+
+        maven(MavenPublication) {
+            artifacts {
+                groupId 'me.chatgame.mobilecg'
+                artifactId 'tugcore'
+                version android.defaultConfig.versionName
+                artifact 'build/outputs/aar/tugcore-release.aar'
+//                artifact (sourceJar) {
+//                    classifier = 'source'
+//                }
+            }
+        }
+    }
+
 }
