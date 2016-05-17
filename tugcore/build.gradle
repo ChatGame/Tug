@@ -1,5 +1,6 @@
 apply plugin: 'com.android.library'
-apply plugin: 'maven-publish'
+//apply plugin: 'maven-publish'
+apply plugin: 'maven'
 
 android {
     compileSdkVersion 23
@@ -30,28 +31,43 @@ task sourceJar(type: Jar) {
     classifier "source"
 }
 
-publishing {
-    publications {
+//publishing {
+//    publications {
+//
+//        repositories.maven {
+////            url 'http://192.168.1.25:8081/repository/internal'
+//            url 'http://121.199.64.231:8081/nexus/content/groups/public'
+//            credentials {
+////                username "android"
+////                password "android1234"
+//                username "deployment"
+//                password "123456"
+//            }
+//        }
+//
+//        maven(MavenPublication) {
+//            artifacts {
+//                groupId 'me.chatgame.mobilecg'
+//                artifactId 'tugcore'
+//                version android.defaultConfig.versionName
+//                artifact 'build/outputs/aar/tugcore-release.aar'
+////                artifact (sourceJar) {
+////                    classifier = 'source'
+////                }
+//            }
+//        }
+//    }
+//}
 
-        repositories.maven {
-            url 'http://192.168.1.25:8081/repository/internal'
-            credentials {
-                username "android"
-                password "android1234"
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: "http://121.199.64.231:8081/nexus/content/repositories/releases/") {
+                authentication(userName: "deployment", password: "123456")
             }
-        }
-
-        maven(MavenPublication) {
-            artifacts {
-                groupId 'me.chatgame.mobilecg'
-                artifactId 'tugcore'
-                version android.defaultConfig.versionName
-                artifact 'build/outputs/aar/tugcore-release.aar'
-//                artifact (sourceJar) {
-//                    classifier = 'source'
-//                }
-            }
+            pom.version = android.defaultConfig.versionName
+            pom.artifactId = 'tugcore'
+            pom.groupId = 'me.chatgame.mobilecg'
         }
     }
-
 }
