@@ -1,4 +1,4 @@
-# An Android library for downloading files.
+# An Android library for downloading files
 
 ## Features:
 * Support add, pause, resume and delete of download task.
