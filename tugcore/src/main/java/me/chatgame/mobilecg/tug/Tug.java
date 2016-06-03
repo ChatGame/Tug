@@ -118,8 +118,8 @@ public class Tug {
 
     /**
      * Just remove download listener without deleting task
-     * @param url
-     * @param listener
+     * @param url download url
+     * @param listener callback listener to remove
      */
     public synchronized void removeListener(String url, DownloadListener listener) {
         if (listener == null) {
@@ -133,7 +133,7 @@ public class Tug {
 
     /**
      * Remove specified listener from all urls
-     * @param listener
+     * @param listener callback listener to remove
      */
     public synchronized void removeListener(DownloadListener listener) {
         if (listener == null) {
@@ -182,8 +182,8 @@ public class Tug {
 
     /**
      * Add download task
-     * @param task
-     * @param listener
+     * @param task tug task
+     * @param listener callback listener to register
      * @return a tug task that is added, if task exists, the existed task will be returned
      */
     TugTask addTask(TugTask task, DownloadListener listener) {
@@ -264,7 +264,7 @@ public class Tug {
 
     /**
      * Add download task
-     * @param url
+     * @param url url to download
      * @param fileType see {@link TugTask.FileType}
      * @param destLocalPath local path to save the downloaded file
      * @param listener callback listener
@@ -282,7 +282,7 @@ public class Tug {
      * @param savedFileName file name to save
      * @param listener callback listener
      * @param priority task priority, see {@linkplain TugTask.Priority}
-     * @return
+     * @return a tug task that is added, if task exists, the existed task will be returned
      */
     public TugTask addTask(String url, int fileType, String destLocalFolder, String savedFileName, DownloadListener listener, int priority) {
         String localPath = null;
@@ -301,7 +301,7 @@ public class Tug {
      * @param destLocalFolder parent folder to save the downloaded file
      * @param savedFileName file name to save
      * @param listener callback listener
-     * @return
+     * @return a tug task that is added, if task exists, the existed task will be returned
      */
     public TugTask addTask(String url, int fileType, String destLocalFolder, String savedFileName, DownloadListener listener) {
         return addTask(url, fileType, destLocalFolder, savedFileName, listener, TugTask.Priority.NORMAL);
@@ -309,7 +309,7 @@ public class Tug {
 
     /**
      * Remove and delete task with specified url, all listeners will be removed too
-     * @param url
+     * @param url download url for deleting task
      */
     public void deleteTask(String url) {
         if (TextUtils.isEmpty(url)) {
@@ -328,7 +328,7 @@ public class Tug {
 
     /**
      * Remove and delete task, if local file in task exists, it will also be deleted.
-     * @param task
+     * @param task tug task to delete
      */
     public void deleteTask(TugTask task) {
         if (task == null) {
@@ -342,7 +342,7 @@ public class Tug {
 
     /**
      * Pause task
-     * @param url
+     * @param url donwload url
      */
     public void pauseTask(String url) {
         cancelWorkingTask(url);
@@ -367,7 +367,7 @@ public class Tug {
 
     /**
      * Resume task, if task doesn't exist a new task will be added
-     * @param url
+     * @param url download url
      */
     public void resumeTask(String url) {
         TugTask task = new TugTask();

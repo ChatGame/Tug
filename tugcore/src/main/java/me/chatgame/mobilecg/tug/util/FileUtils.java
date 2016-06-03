@@ -15,7 +15,7 @@ public class FileUtils {
     /**
      * 获取可用的缓存目录 优先/sdcard/Android/data/mypacketname/cache
      * 不可用时返回/data/data/mypacketname/file
-     *
+     * @param context context instance
      * @return path
      */
     public static String getCacheDir(Context context) {

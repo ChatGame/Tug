@@ -1,6 +1,6 @@
 apply plugin: 'com.android.library'
-apply plugin: 'maven-publish'
-//apply plugin: 'maven'
+apply plugin: 'maven'
+apply plugin: 'signing'
 
 android {
     compileSdkVersion 23
@@ -10,7 +10,7 @@ android {
         minSdkVersion 9
         targetSdkVersion 23
         versionCode 3
-        versionName "1.1.1"
+        versionName PROJ_VERSION
     }
     buildTypes {
         release {
@@ -23,51 +23,84 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:23.1.1'
 }
 
-task sourceJar(type: Jar) {
+task sourcesJar(type: Jar) {
     from android.sourceSets.main.java.srcDirs
-    classifier "source"
+    classifier = 'sources'
+}
+task javadoc(type: Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+}
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+artifacts {
+    archives javadocJar
+    archives sourcesJar
 }
 
-publishing {
-    publications {
+group = PROJ_GROUP
+version = PROJ_VERSION
+archivesBaseName = PROJ_ARTIFACTID
 
-        repositories.maven {
-//            url 'http://192.168.1.25:8081/repository/internal'
-            url 'http://121.199.64.231:8081/nexus/content/repositories/releases/'
-            credentials {
-//                username "android"
-//                password "android1234"
-                username "deployment"
-                password "123456"
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+
+signing {
+    sign configurations.archives
+}
+
+ext."signing.keyId" = properties.getProperty("gpg.keyid")
+ext."signing.password" = properties.getProperty("gpg.pwd")
+ext."signing.secretKeyRingFile" = properties.getProperty("gpg.ringfile")
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            def ossrhUsername = properties.getProperty('oss.user');
+            def ossrhPassword = properties.getProperty('oss.pwd');
+
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
             }
-        }
 
-        maven(MavenPublication) {
-            artifacts {
-                groupId 'me.chatgame.mobilecg'
-                artifactId 'tugcore'
-                version android.defaultConfig.versionName
-                artifact 'build/outputs/aar/tugcore-release.aar'
-//                artifact (sourceJar) {
-//                    classifier = 'source'
-//                }
+            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+
+            pom.project {
+                name PROJ_NAME
+                packaging 'aar'
+                // optionally artifactId can be defined here
+                description PROJ_DESCRIPTION
+                url PROJ_WEBSITEURL
+
+                scm {
+                    connection PROJ_VCSURL
+                    developerConnection PROJ_VCSURL
+                    url PROJ_WEBSITEURL
+                }
+
+                licenses {
+                    license {
+                        name 'The Apache License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'starkingwx'
+                        name 'starkingwx'
+                        email 'xingwang@v5.cn'
+                    }
+                }
             }
         }
     }
 }
-
-//uploadArchives {
-//    repositories {
-//        mavenDeployer {
-//            repository(url: "http://121.199.64.231:8081/nexus/content/repositories/releases/") {
-//                authentication(userName: "deployment", password: "123456")
-//            }
-//            pom.version = android.defaultConfig.versionName
-//            pom.artifactId = 'tugcore'
-//            pom.groupId = 'me.chatgame.mobilecg'
-//        }
-//    }
-//}

@@ -6,43 +6,43 @@ package me.chatgame.mobilecg.tug;
 public interface DownloadListener {
     /**
      * Called on download start
-     * @param task
+     * @param task tug task
      */
     void onDownloadStart(TugTask task);
 
     /**
      * When downloading is going, progress will be contained in task
-     * @param task
+     * @param task tug task
      */
     void onDownloadProgress(TugTask task);
 
     /**
      * Called on download success
-     * @param task
+     * @param task tug task
      */
     void onDownloadSuccess(TugTask task);
 
     /**
      * Called on download failed
-     * @param task
+     * @param task tug task
      */
     void onDownloadFail(TugTask task);
 
     /**
      * Called on download task is deleted
-     * @param task
+     * @param task tug task
      */
     void onDownloadDeleted(TugTask task);
 
     /**
      * Called on download task is paused
-     * @param task
+     * @param task tug task
      */
     void onDownloadPaused(TugTask task);
 
     /**
      * Called on download task is resumed
-     * @param task
+     * @param task tug task
      */
     void onDownloadResumed(TugTask task);
 }

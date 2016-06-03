@@ -17,12 +17,6 @@ public class NetworkUtil implements INetworkUtil {
         manager = ((ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE));
     }
 
-    /**
-     * 获取当前网络类型 <br>
-     * 注意类型包括：2G,3G,4G,WIFI,UNKNOWN
-     *
-     * @return
-     */
     @Override
     public NetworkType getNetworkType() {
         NetworkInfo net = manager.getActiveNetworkInfo();
