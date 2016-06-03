@@ -35,3 +35,5 @@ If you are building with Gradle, simply add the following line to the `dependenc
 ```groovy
 compile 'me.chatgame.mobilecg:tugcore:1.1.1'
 ```
+
+And add `mavenCentral()` to `repositories` section in `build.gradle`
